@@ -32,11 +32,19 @@ if tcp:
                    os.environ.get("BOARD_TCP_NAME", "")))
 for sid, shot, name in boards:
     ap.restart()
+    launcher = {t for t, _ in ap.texts()}   # the launcher stays painted under an open app
     ap.open_server(sid)
-    # The board's own name in the title bar is the proof its screen arrived;
-    # what the screen says below that is the board's business, not this
-    # sample's. A board that offers an LED gets its button pressed.
-    ap.wait_text(name or "LED")
+    # The title bar carries the screen the board serves (its app's own title,
+    # not the server's name), so the proof its screen arrived is that the
+    # launcher is gone and the board's page has text of its own. What it says
+    # is the board's business, not this sample's. A board that offers an LED
+    # gets its button pressed.
+    for _ in range(40):
+        if not ap.at_launcher() and len({t for t, _ in ap.texts()} - launcher) > 3:
+            break
+        time.sleep(0.5)
+    else:
+        raise AssertionError(f"{name or sid}: no screen arrived from the board")
     ap.tap("LED on") if ap.has_text("LED on") else None
     time.sleep(1)
     ap.shot(f"{CAP}/{shot}")
